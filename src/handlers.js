@@ -39,5 +39,33 @@ const signIn = (req, res) => {
         if (!token) {
             return res.status(401).end();
         }
+
+        var payload;
+        try {
+            payload = jwt.verify(token, jwtKey);
+        } catch (error) {
+            if(error instanceof jwt.JsonWebTokenError) {
+                return res.status(401).end();
+            }
+            return res.status(400).end();
+        }
+        res.send(`Welcome to the secret page: ${payload.username}!`);
     }
+};
+
+const nowIssuedSeconds = Math.round(Number(new Date()) / 1000);
+if (payload - nowIssuedSeconds > 30) {
+    return res.status(401).end();
+}
+
+const newToken = jwt.sign({ username: payload.username }, jwtKey, {
+    algorithm: 'HS256',
+    expiresIn: jwtExpirySeconds,
+});
+
+res.cookie('token', newToken, { maxAge: jwtExpirySeconds * 1000 });
+
+const logout = (req, res) => {
+    res.clearCookie('token');
+    res.end();
 };
